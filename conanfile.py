@@ -65,7 +65,12 @@ class GstsdkConan(ConanFile):
         test_folder = os.path.join(basedir, "test_package")
         test_build_folder = os.path.join(test_folder, "build")
         if path_exists(test_folder, basedir) and path_exists(test_build_folder, test_folder):
-                tools.rmdir(test_build_folder)
+            #tools.rmdir(test_build_folder)
+            #os.removedirs(test_build_folder)
+            if self.settings.os == "Windows":
+                self.run('rd/s/q %s'%(test_build_folder))
+            if self.settings.os == "Linux":
+                self.run('rm -rf %s'%(test_build_folder))
 
     def build(self):
         targets = ["libffi","zlib","glib","gtk-doc-lite","gstreamer","libiconv","libxml2","libogg","libpng","pixman",
@@ -81,6 +86,7 @@ class GstsdkConan(ConanFile):
         targets_built = self._load_targets_built()
         tools.out.info( "TARGETS BUILT: "+ ';'.join(targets_built) )
         #FIXME lib + pattern
+
 
         for lib in targets:
             if self._is_target_built(lib, targets_built):
