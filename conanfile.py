@@ -40,6 +40,9 @@ class GstsdkConan(ConanFile):
 
     def _cache_file(self):
         return os.path.join(self._cache_dir(), "data.pkl")
+    
+    def _cache_file_rebuild(self):
+        return os.path.join(self._cache_dir(), "rebuild.pkl")
 
     def _load_targets_built(self):
         targets_built = []
@@ -60,6 +63,23 @@ class GstsdkConan(ConanFile):
             tools.mkdir(self._cache_dir())
         with open(self._cache_file(), 'wb') as f:
             pickle.dump(targets_built, f)
+
+    def _load_targets_rebuild(self):
+        targets_rebuild = []
+        if os.path.exists(self._cache_dir()) and path_exists(self._cache_file_rebuild(), self._cache_dir()):
+            with open(self._cache_file_rebuild(), 'rb') as f:
+                targets_rebuild = pickle.load(f)
+
+        return targets_rebuild
+
+    def _is_target_rebuild_configured(self, target, targets_rebuild):
+        return target in targets_rebuild
+    
+    def _dump_targets_rebuild(self, targets_rebuild):
+        if not os.path.exists(self._cache_dir()):
+            tools.mkdir(self._cache_dir())
+        with open(self._cache_file_rebuild(), 'wb') as f:
+            pickle.dump(targets_rebuild, f)
 
     def _remove_test_folder(self, basedir):
         test_folder = os.path.join(basedir, "test_package")
@@ -86,11 +106,16 @@ class GstsdkConan(ConanFile):
         targets_built = self._load_targets_built()
         tools.out.info( "TARGETS BUILT: "+ ';'.join(targets_built) )
         #FIXME lib + pattern
+        #targets_rebuild = ['glib-networking','gst-env']
+        targets_rebuild = []
+        #self._dump_targets_rebuild(targets_rebuild)
+        #targets_rebuild = self._load_targets_rebuild()
+        tools.out.info( "TARGETS REBUILD: " + ";".join(targets_rebuild) )
 
 
         for lib in targets:
-            if self._is_target_built(lib, targets_built):
-                tools.out.info("TARGET BUILT: " + lib)
+            if self._is_target_built(lib, targets_built) and not self._is_target_rebuild_configured(lib, targets_rebuild):
+                tools.out.info("TARGET BUILT(NOT REBUILD CONFIGURED): " + lib)
                 continue
             tools.out.info("REMOVE: " + lib)
             self.run('conan remove --force ' + lib)
